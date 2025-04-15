@@ -3,6 +3,7 @@ const express = require('express');
 const path = require('path');
 const methodOverride = require('method-override');
 const connectDB = require('./config/database');
+const middleware = require('./middleware');
 
 // Initialize express app
 const app = express();
@@ -12,6 +13,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride('_method'));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Custom middleware
+app.use(middleware.requestLogger);
+app.use(middleware.setGlobalViewVariables);
 
 // Set up view engine
 app.set('view engine', 'ejs');
@@ -31,22 +36,15 @@ app.get('/', (req, res) => {
   res.redirect('/tasks');
 });
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).render('error', { 
-    error: err,
-    message: 'Something went wrong!'
-  });
-});
+// 404 handler
+app.use(middleware.notFound);
 
-// 404 route
-app.use((req, res) => {
-  res.status(404).render('404', { url: req.originalUrl });
-});
+// Error handler
+app.use(middleware.errorHandler);
 
 // Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`Visit http://localhost:${PORT} to view the application`);
 });
